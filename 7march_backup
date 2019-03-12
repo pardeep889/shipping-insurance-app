@@ -1,0 +1,245 @@
+<script>
+$(document).ready(function() {
+    $('#shipping-insurance').append('<br> <input type="checkbox" id= "checkIN" checked="checked" /> Add Shipping protection for<span id = "shipprice"><span><br /><span class="rw-info modal-toggle">sdi</span>');
+  	$('#shipping-info').append('<span class="rw-info modal-toggle">i</span>'); 
+ 	 var data = {
+        "getVariant": true
+    };
+    $.ajax({
+        type: "GET",
+        data: data,
+        url: "/apps/store_cart",
+        success: function(data) {
+            appLogic(data)
+        }
+    });
+
+    function appLogic(variant_id) {
+        jQuery.getJSON('/cart.js', function(cart) {
+            var price;
+            var Subtotal = 0;
+            var line_price;
+            for (var j = 0; j < cart.items.length; j += 1) {
+                line_price = cart.items[j].line_price;
+                if (cart.items[j].id == variant_id) {
+                    line_price = 0
+                }
+                Subtotal = Subtotal + line_price
+            }
+            var total_price = (Subtotal) / 100;
+            if (total_price > 500) {
+                price = (total_price - 100) * 1.5;
+                price = (price - total_price);
+                console.log(` price: ${ price }`)
+            } else {
+                price = 90.8
+            }
+            var quantity = 1;
+            var found = 0;
+            if (cart.items.length > 0) {
+                for (var i = 0; i < cart.items.length; i += 1) {
+                    if (cart.items[i].id == variant_id) {
+                        found = 1;
+                        var data = {
+                            "total_amount": price,
+                            "product_id": cart.items[i].id
+                        };
+                        $.ajax({
+                            type: "GET",
+                            data: data,
+                            url: "/apps/store_cart",
+                            success: function(data) {}
+                        });
+                        var price = cart.items[i].price / 100;
+                        $('#shipprice').html(" Rs " + price + "");
+                        break
+                    }
+                }
+                if (!found && document.URL.indexOf("#") == -1) {
+                    $.ajax({
+                        type: 'POST',
+                        url: '/cart/add.js',
+                        dataType: 'json',
+                        data: 'quantity=' + quantity + '&id=' + variant_id,
+                        success: function(data) {
+                            $('a[aria-label="Remove shipping insurance"]').attr('data', 'test()');
+                            $('#shipprice').html(" Rs " + price + "");
+                        }
+                    })
+                } else {
+                    $.ajax({
+                        type: 'POST',
+                        url: '/cart/update.js',
+                        dataType: 'json',
+                        data: 'quantity=0&id=' + variant_id,
+                        success: function(data) {
+                            console.log('remove');
+//                             $('a[aria-label="Remove shipping insurance"]').attr('onclick', 'return yesIamFunction();');
+//                             yesIamFunction = function(event) {
+//                                 removeOnUncheck();
+//                                 return false
+//                             };
+                            $('#shipprice').html(" Rs " + price + "")
+                        }
+                    })
+                }
+            } else {
+                console.log('No items in the cart')
+            }
+        })
+    }
+    $('#checkIN').change(function() {
+        if ($(this).is(':checked')) {
+            window.location.href = "/cart"
+        } else {
+            var data = {
+                "getVariant": true
+            };
+            $.ajax({
+                type: "GET",
+                data: data,
+                url: "/apps/store_cart",
+                success: function(data) {
+                    removeOnUncheck(data)
+                }
+            })
+        }
+    });
+
+    function removeOnUncheck(variant_id) {
+        $.ajax({
+            type: 'POST',
+            url: '/cart/update.js',
+            dataType: 'json',
+            data: 'quantity=0&id=' + variant_id,
+            success: function(data) {
+                var d = $('a[aria-label="Remove shipping insurance"]').attr('href');
+                $.ajax({
+                    type: 'GET',
+                    url: d,
+                    complete: function(data) {
+//                         if (document.URL.indexOf("#") == -1) {
+//                             url = document.URL + "#";
+//                             location = "#";
+//                             location.reload(true)
+//                         }
+                    }
+                })
+            }
+        })
+    }
+    if (document.URL.indexOf("#") != -1) {
+        $('#checkIN').prop('checked', false)
+    }
+    $('.shipping-info-close').on('click', function(e) {
+        e.preventDefault();
+        $('.modal').toggleClass('is-visible');
+    });
+});
+</script>
+<style>
+  	.modal {
+    position: absolute;
+    z-index: 10000; /* 1 */
+    top: 0;
+    left: 0;
+    visibility: hidden;
+    width: 100%;
+    height: 100%;
+}
+.modal.is-visible {
+    visibility: visible;
+  	display:block;
+  	opacity:0.7;
+      -webkit-transform: translateY(0px); 
+     transform: translateY(0px);
+}
+.modal-overlay {
+  position: fixed;
+  z-index: 10;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: hsla(0, 0%, 0%, 0.5);
+  visibility: hidden;
+  opacity: 0;
+  transition: visibility 0s linear 0.3s, opacity 0.3s;
+}
+.modal.is-visible .modal-overlay {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0s;
+}
+.modal-wrapper {
+  position: absolute;
+  z-index: 9999;
+  top: 6em;
+  left: 50%;
+  width: 32em;
+  margin-left: -16em;
+  background-color: #fff;
+  box-shadow: 0 0 1.5em hsla(0, 0%, 0%, 0.35);
+}
+.modal-transition {
+  transition: all 0.3s 0.12s;
+  transform: translateY(-10%);
+  opacity: 0;
+}
+.modal.is-visible .modal-transition {
+  transform: translateY(0);
+  opacity: 1;
+}
+.modal-header,
+.modal-content {
+  padding: 1em;
+}
+.modal-header {
+  position: relative;
+  background-color: #fff;
+  box-shadow: 0 1px 2px hsla(0, 0%, 0%, 0.06);
+  border-bottom: 1px solid #e8e8e8;
+}
+.modal-close {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 1em;
+  color: #aaa;
+  background: none;
+  border: 0;
+}
+.modal-close:hover {
+  color: #777;
+}
+.modal-heading {
+  font-size: 1.125em;
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+.modal-content > *:first-child {
+  margin-top: 0;
+}
+.modal-content > *:last-child {
+  margin-bottom: 0;
+}
+.rw-info {
+-ms-flex-align: center;
+align-items: center;
+border: 1px solid #000000 !important;
+border-radius: 100%;
+-webkit-box-sizing: border-box;
+box-sizing: border-box;
+cursor: pointer;
+display: -ms-inline-flexbox;
+display: inline-flex;
+font-size: 13px;
+-ms-flex-pack: center;
+justify-content: center;
+line-height: 1.3;
+margin-left: 7px;
+padding: 0 7px;
+}
+
+</style>
